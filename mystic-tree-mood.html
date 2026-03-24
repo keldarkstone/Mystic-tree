@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mystic Tree · Mood Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --moss: #5a6e4a;
+    --sage: #8fa67e;
+    --sage-light: #c5d4b8;
+    --clay: #b5785a;
+    --clay-light: #e8cfc0;
+    --cream: #f5f0e8;
+    --parchment: #ede6d6;
+    --bark: #3d2e1e;
+    --fog: #9aa89c;
+    --fog-light: #dce4de;
+    --warm-white: #faf7f2;
+    --gold: #c49a3c;
+    --evening: #6a5a8a;
+    --evening-light: #c8bfdc;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--warm-white);
+    color: var(--bark);
+    min-height: 100vh;
+    padding-bottom: 3rem;
+  }
+
+  .header {
+    background: var(--moss);
+    padding: 1.2rem 1.5rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 12px rgba(61,46,30,0.18);
+  }
+  .header-title {
+    font-family: 'Lora', serif;
+    font-size: 1.15rem;
+    color: var(--cream);
+  }
+  .header-title em { font-style: italic; color: var(--sage-light); }
+  .header-date { font-size: 0.75rem; color: var(--sage-light); font-weight: 300; }
+
+  .nav {
+    display: flex;
+    background: var(--parchment);
+    border-bottom: 1px solid var(--sage-light);
+  }
+  .nav-btn {
+    flex: 1;
+    padding: 0.7rem 0.5rem;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: none;
+    background: transparent;
+    color: var(--fog);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    letter-spacing: 0.04em;
+  }
+  .nav-btn.active { color: var(--moss); border-bottom-color: var(--moss); }
+
+  .main { max-width: 640px; margin: 0 auto; padding: 1rem; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* Reminder */
+  .reminder-box {
+    background: linear-gradient(135deg, var(--clay-light), var(--parchment));
+    border: 1.5px solid var(--clay);
+    border-radius: 14px;
+    padding: 1rem 1.2rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.8rem;
+    animation: fadeIn 0.4s ease;
+  }
+  .reminder-icon { font-size: 1.6rem; }
+  .reminder-title { font-weight: 700; font-size: 0.9rem; color: var(--bark); }
+  .reminder-msg { font-size: 0.8rem; color: var(--clay); margin-top: 0.15rem; }
+
+  /* Check-in cards */
+  .checkin-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(61,46,30,0.07);
+    margin-bottom: 1rem;
+    overflow: hidden;
+    border: 1.5px solid var(--sage-light);
+  }
+  .checkin-header {
+    padding: 0.85rem 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--sage-light);
+  }
+  .checkin-header.morning { background: linear-gradient(135deg, #fdf3e3, #fae8c8); }
+  .checkin-header.midday  { background: linear-gradient(135deg, #edf4ea, #d8ecce); }
+  .checkin-header.evening { background: linear-gradient(135deg, #edeaf5, #dcd6ef); }
+  .checkin-time {
+    font-family: 'Lora', serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--bark);
+  }
+  .checkin-icon { font-size: 1.3rem; }
+  .checkin-saved-badge {
+    font-size: 0.7rem;
+    background: var(--moss);
+    color: white;
+    border-radius: 20px;
+    padding: 0.2rem 0.6rem;
+    font-weight: 600;
+    display: none;
+  }
+  .checkin-body { padding: 1rem 1.2rem; }
+
+  .pill-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    color: var(--fog);
+    margin-bottom: 0.5rem;
+  }
+  .pill-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.9rem;
+  }
+  .pill {
+    padding: 0.3rem 0.7rem;
+    border-radius: 20px;
+    border: 1.5px solid var(--sage-light);
+    background: var(--warm-white);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--bark);
+    user-select: none;
+  }
+  .pill:hover { border-color: var(--moss); background: var(--fog-light); }
+  .pill.selected { background: var(--moss); border-color: var(--moss); color: white; font-weight: 700; }
+  .pill.energy.selected { background: var(--clay); border-color: var(--clay); }
+  .pill.custom-pill { border-style: dashed; }
+  .pill.custom-pill.selected { border-style: solid; }
+
+  /* Custom word input */
+  .custom-input-row {
+    display: flex;
+    gap: 0.4rem;
+    margin-top: 0.3rem;
+    margin-bottom: 0.9rem;
+    align-items: center;
+  }
+  .custom-input-row input {
+    flex: 1;
+    padding: 0.35rem 0.7rem;
+    border: 1.5px solid var(--sage-light);
+    border-radius: 20px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.78rem;
+    background: var(--warm-white);
+    color: var(--bark);
+    outline: none;
+  }
+  .custom-input-row input:focus { border-color: var(--moss); }
+  .custom-add-btn {
+    padding: 0.35rem 0.75rem;
+    background: var(--moss);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .custom-add-btn:hover { background: #4a5c3a; }
+
+  /* Note */
+  .checkin-note {
+    width: 100%;
+    border: 1.5px solid var(--sage-light);
+    border-radius: 10px;
+    padding: 0.6rem 0.8rem;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.82rem;
+    color: var(--bark);
+    background: var(--warm-white);
+    resize: vertical;
+    min-height: 60px;
+    outline: none;
+    margin-bottom: 0.8rem;
+  }
+  .checkin-note:focus { border-color: var(--moss); }
+
+  .save-btn {
+    width: 100%;
+    padding: 0.6rem;
+    background: var(--moss);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+    letter-spacing: 0.04em;
+  }
+  .save-btn:hover { background: #4a5c3a; }
+
+  /* History */
+  .history-day {
+    background: white;
+    border-radius: 14px;
+    border: 1.5px solid var(--sage-light);
+    margin-bottom: 1rem;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(61,46,30,0.05);
+  }
+  .history-day-header {
+    background: var(--parchment);
+    padding: 0.7rem 1rem;
+    font-family: 'Lora', serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--bark);
+    border-bottom: 1px solid var(--sage-light);
+  }
+  .history-checkin {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--fog-light);
+    display: flex;
+    gap: 0.8rem;
+    align-items: flex-start;
+  }
+  .history-checkin:last-child { border-bottom: none; }
+  .history-time-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fog);
+    min-width: 55px;
+    padding-top: 0.1rem;
+  }
+  .history-pills { display: flex; flex-wrap: wrap; gap: 0.3rem; flex: 1; }
+  .history-pill {
+    font-size: 0.72rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 20px;
+    background: var(--fog-light);
+    color: var(--bark);
+  }
+  .history-pill.energy { background: var(--clay-light); }
+  .history-note-text {
+    font-size: 0.75rem;
+    color: var(--fog);
+    font-style: italic;
+    margin-top: 0.3rem;
+    width: 100%;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: var(--fog);
+    font-style: italic;
+    font-size: 0.85rem;
+  }
+
+  /* Patterns */
+  .pattern-card {
+    background: white;
+    border-radius: 14px;
+    border: 1.5px solid var(--sage-light);
+    padding: 1.1rem 1.2rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(61,46,30,0.05);
+  }
+  .pattern-title {
+    font-family: 'Lora', serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--bark);
+    margin-bottom: 0.7rem;
+  }
+  .pattern-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+  }
+  .pattern-bar-label { font-size: 0.78rem; min-width: 90px; color: var(--bark); }
+  .pattern-bar-wrap { flex: 1; background: var(--fog-light); border-radius: 6px; height: 10px; overflow: hidden; }
+  .pattern-bar-fill { height: 100%; background: var(--moss); border-radius: 6px; transition: width 0.5s; }
+  .pattern-bar-fill.energy { background: var(--clay); }
+  .pattern-count { font-size: 0.7rem; color: var(--fog); min-width: 20px; text-align: right; }
+
+  @keyframes fadeIn { from { opacity:0; transform: translateY(-4px); } to { opacity:1; transform:none; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">🌿 <em>Mystic Tree</em> · Mood Tracker</div>
+  <div class="header-date" id="headerDate"></div>
+</div>
+
+<div class="nav">
+  <button class="nav-btn active" onclick="showView('today')">TODAY</button>
+  <button class="nav-btn" onclick="showView('history')">HISTORY</button>
+  <button class="nav-btn" onclick="showView('patterns')">PATTERNS</button>
+</div>
+
+<div class="main">
+
+  <!-- TODAY -->
+  <div class="view active" id="view-today">
+
+    <div class="reminder-box" id="reminder-box" style="display:none">
+      <div class="reminder-icon" id="reminder-icon">🌅</div>
+      <div>
+        <div class="reminder-title" id="reminder-title"></div>
+        <div class="reminder-msg" id="reminder-msg"></div>
+      </div>
+    </div>
+
+    <!-- MORNING -->
+    <div class="checkin-card">
+      <div class="checkin-header morning">
+        <div class="checkin-time">🌅 Morning</div>
+        <div class="checkin-icon"></div>
+        <div class="checkin-saved-badge" id="badge-morning">✓ Saved</div>
+      </div>
+      <div class="checkin-body">
+        <div class="pill-label">Mood</div>
+        <div class="pill-row" id="mood-morning"></div>
+        <div class="custom-input-row">
+          <input type="text" placeholder="something else…" id="custom-mood-morning-input" onkeydown="handleCustomKey(event,'mood','morning')">
+          <button class="custom-add-btn" onclick="addCustomPill('mood','morning')">+ add</button>
+        </div>
+        <div class="pill-label">Energy / Spoons</div>
+        <div class="pill-row" id="energy-morning"></div>
+        <div class="custom-input-row">
+          <input type="text" placeholder="something else…" id="custom-energy-morning-input" onkeydown="handleCustomKey(event,'energy','morning')">
+          <button class="custom-add-btn" onclick="addCustomPill('energy','morning')">+ add</button>
+        </div>
+        <div class="pill-label">Note (optional)</div>
+        <textarea class="checkin-note" id="note-morning" placeholder="Anything worth noting…"></textarea>
+        <button class="save-btn" onclick="saveCheckin('morning')">Save Morning Check-in</button>
+      </div>
+    </div>
+
+    <!-- MIDDAY -->
+    <div class="checkin-card">
+      <div class="checkin-header midday">
+        <div class="checkin-time">☀️ Midday</div>
+        <div class="checkin-icon"></div>
+        <div class="checkin-saved-badge" id="badge-midday">✓ Saved</div>
+      </div>
+      <div class="checkin-body">
+        <div class="pill-label">Mood</div>
+        <div class="pill-row" id="mood-midday"></div>
+        <div class="custom-input-row">
+          <input type="text" placeholder="something else…" id="custom-mood-midday-input" onkeydown="handleCustomKey(event,'mood','midday')">
+          <button class="custom-add-btn" onclick="addCustomPill('mood','midday')">+ add</button>
+        </div>
+        <div class="pill-label">Energy / Spoons</div>
+        <div class="pill-row" id="energy-midday"></div>
+        <div class="custom-input-row">
+          <input type="text" placeholder="something else…" id="custom-energy-midday-input" onkeydown="handleCustomKey(event,'energy','midday')">
+          <button class="custom-add-btn" onclick="addCustomPill('energy','midday')">+ add</button>
+        </div>
+        <div class="pill-label">Note (optional)</div>
+        <textarea class="checkin-note" id="note-midday" placeholder="How has the day shifted?"></textarea>
+        <button class="save-btn" onclick="saveCheckin('midday')">Save Midday Check-in</button>
+      </div>
+    </div>
+
+    <!-- EVENING -->
+    <div class="checkin-card">
+      <div class="checkin-header evening">
+        <div class="checkin-time">🌙 Evening</div>
+        <div class="checkin-icon"></div>
+        <div class="checkin-saved-badge" id="badge-evening">✓ Saved</div>
+      </div>
+      <div class="checkin-body">
+        <div class="pill-label">Mood</div>
+        <div class="pill-row" id="mood-evening"></div>
+        <div class="custom-input-row">
+          <input type="text" placeholder="something else…" id="custom-mood-evening-input" onkeydown="handleCustomKey(event,'mood','evening')">
+          <button class="custom-add-btn" onclick="addCustomPill('mood','evening')">+ add</button>
+        </div>
+        <div class="pill-label">Energy / Spoons</div>
+        <div class="pill-row" id="energy-evening"></div>
+        <div class="custom-input-row">
+          <input type="text" placeholder="something else…" id="custom-energy-evening-input" onkeydown="handleCustomKey(event,'energy','evening')">
+          <button class="custom-add-btn" onclick="addCustomPill('energy','evening')">+ add</button>
+        </div>
+        <div class="pill-label">Note (optional)</div>
+        <textarea class="checkin-note" id="note-evening" placeholder="Where did you land today?"></textarea>
+        <button class="save-btn" onclick="saveCheckin('evening')">Save Evening Check-in</button>
+      </div>
+    </div>
+
+  </div><!-- /today -->
+
+  <!-- HISTORY -->
+  <div class="view" id="view-history">
+    <div id="history-content"></div>
+  </div>
+
+  <!-- PATTERNS -->
+  <div class="view" id="view-patterns">
+    <div id="patterns-content"></div>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+const MOOD_WORDS = ['grounded','anxious','foggy','tender','okay','sparky','heavy','hopeful',
+  'irritable','numb','content','unsettled','mad','frustrated','jenky','burnt out',
+  'on edge','sad','melancholy'];
+const ENERGY_WORDS = ['empty','low','flickering','steady','flowing','charged'];
+const TIMES = ['morning','midday','evening'];
+
+function todayKey() {
+  return new Date().toLocaleDateString('en-CA');
+}
+
+function loadData() {
+  try { return JSON.parse(localStorage.getItem('mt-mood') || '{}'); } catch { return {}; }
+}
+function saveData(d) { localStorage.setItem('mt-mood', JSON.stringify(d)); }
+
+// Build pill rows
+function buildPills() {
+  TIMES.forEach(t => {
+    const mRow = document.getElementById(`mood-${t}`);
+    const eRow = document.getElementById(`energy-${t}`);
+    mRow.innerHTML = MOOD_WORDS.map(w =>
+      `<span class="pill" onclick="togglePill(this)" data-type="mood" data-time="${t}">${w}</span>`
+    ).join('');
+    eRow.innerHTML = ENERGY_WORDS.map(w =>
+      `<span class="pill energy" onclick="togglePill(this)" data-type="energy" data-time="${t}">${w}</span>`
+    ).join('');
+  });
+}
+
+function togglePill(el) { el.classList.toggle('selected'); }
+
+function addCustomPill(type, time) {
+  const input = document.getElementById(`custom-${type}-${time}-input`);
+  const val = input.value.trim();
+  if (!val) return;
+  const row = document.getElementById(`${type}-${time}`);
+  const pill = document.createElement('span');
+  pill.className = `pill custom-pill${type === 'energy' ? ' energy' : ''} selected`;
+  pill.dataset.type = type;
+  pill.dataset.time = time;
+  pill.onclick = function(){ this.classList.toggle('selected'); };
+  pill.textContent = val;
+  row.appendChild(pill);
+  input.value = '';
+}
+
+function handleCustomKey(e, type, time) {
+  if (e.key === 'Enter') addCustomPill(type, time);
+}
+
+function getSelected(type, time) {
+  return [...document.querySelectorAll(`#${type}-${time} .pill.selected`)].map(p => p.textContent);
+}
+
+function saveCheckin(time) {
+  const data = loadData();
+  const key = todayKey();
+  if (!data[key]) data[key] = {};
+  data[key][time] = {
+    mood: getSelected('mood', time),
+    energy: getSelected('energy', time),
+    note: document.getElementById(`note-${time}`).value.trim(),
+    ts: new Date().toISOString()
+  };
+  saveData(data);
+  document.getElementById(`badge-${time}`).style.display = 'inline-block';
+}
+
+function restoreToday() {
+  const data = loadData();
+  const today = data[todayKey()];
+  if (!today) return;
+  TIMES.forEach(t => {
+    const entry = today[t];
+    if (!entry) return;
+    // Restore mood pills
+    entry.mood && entry.mood.forEach(w => {
+      const existing = [...document.querySelectorAll(`#mood-${t} .pill`)].find(p => p.textContent === w);
+      if (existing) { existing.classList.add('selected'); return; }
+      // custom
+      const row = document.getElementById(`mood-${t}`);
+      const pill = document.createElement('span');
+      pill.className = 'pill custom-pill selected';
+      pill.dataset.type = 'mood'; pill.dataset.time = t;
+      pill.onclick = function(){ this.classList.toggle('selected'); };
+      pill.textContent = w;
+      row.appendChild(pill);
+    });
+    // Restore energy pills
+    entry.energy && entry.energy.forEach(w => {
+      const existing = [...document.querySelectorAll(`#energy-${t} .pill`)].find(p => p.textContent === w);
+      if (existing) { existing.classList.add('selected'); return; }
+      const row = document.getElementById(`energy-${t}`);
+      const pill = document.createElement('span');
+      pill.className = 'pill energy custom-pill selected';
+      pill.dataset.type = 'energy'; pill.dataset.time = t;
+      pill.onclick = function(){ this.classList.toggle('selected'); };
+      pill.textContent = w;
+      row.appendChild(pill);
+    });
+    if (entry.note) document.getElementById(`note-${t}`).value = entry.note;
+    document.getElementById(`badge-${t}`).style.display = 'inline-block';
+  });
+}
+
+function checkReminder() {
+  const h = new Date().getHours();
+  const data = loadData();
+  const todayData = data[todayKey()] || {};
+  const box = document.getElementById('reminder-box');
+  let show = false, icon = '🌅', title = '', msg = '';
+  if (h >= 7 && h < 11 && !todayData.morning) {
+    show=true; icon='🌅'; title='Good morning — quick check-in?'; msg='How are you starting the day?';
+  } else if (h >= 12 && h < 15 && !todayData.midday) {
+    show=true; icon='☀️'; title='Midday check-in time'; msg='How has the day shifted since morning?';
+  } else if (h >= 19 && h < 22 && !todayData.evening) {
+    show=true; icon='🌙'; title='Evening landing'; msg='Where did you land today?';
+  }
+  box.style.display = show ? 'flex' : 'none';
+  if (show) {
+    document.getElementById('reminder-icon').textContent = icon;
+    document.getElementById('reminder-title').textContent = title;
+    document.getElementById('reminder-msg').textContent = msg;
+  }
+}
+
+// Nav
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`view-${name}`).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'history') renderHistory();
+  if (name === 'patterns') renderPatterns();
+}
+
+function renderHistory() {
+  const data = loadData();
+  const keys = Object.keys(data).sort().reverse();
+  const el = document.getElementById('history-content');
+  if (!keys.length) { el.innerHTML = '<div class="empty-state">No check-ins yet. Start today! 🌿</div>'; return; }
+  el.innerHTML = keys.map(k => {
+    const d = data[k];
+    const dateLabel = new Date(k + 'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+    const rows = ['morning','midday','evening'].filter(t => d[t]).map(t => {
+      const entry = d[t];
+      const timeLabel = t.charAt(0).toUpperCase() + t.slice(1);
+      const moodPills = (entry.mood||[]).map(w => `<span class="history-pill">${w}</span>`).join('');
+      const energyPills = (entry.energy||[]).map(w => `<span class="history-pill energy">${w}</span>`).join('');
+      const note = entry.note ? `<span class="history-note-text">"${entry.note}"</span>` : '';
+      return `<div class="history-checkin">
+        <div class="history-time-label">${timeLabel}</div>
+        <div style="flex:1">
+          <div class="history-pills">${moodPills}${energyPills}</div>
+          ${note}
+        </div>
+      </div>`;
+    }).join('');
+    return `<div class="history-day">
+      <div class="history-day-header">${dateLabel}</div>
+      ${rows || '<div style="padding:0.6rem 1rem;font-size:0.8rem;color:var(--fog);font-style:italic;">No check-ins recorded</div>'}
+    </div>`;
+  }).join('');
+}
+
+function renderPatterns() {
+  const data = loadData();
+  const moodCount = {}, energyCount = {};
+  Object.values(data).forEach(day => {
+    TIMES.forEach(t => {
+      if (!day[t]) return;
+      (day[t].mood||[]).forEach(w => { moodCount[w] = (moodCount[w]||0)+1; });
+      (day[t].energy||[]).forEach(w => { energyCount[w] = (energyCount[w]||0)+1; });
+    });
+  });
+  const el = document.getElementById('patterns-content');
+  const total = Object.keys(data).length;
+  if (!total) { el.innerHTML = '<div class="empty-state">Check in for a few days to start seeing patterns. 🌿</div>'; return; }
+
+  function barRows(counts, cls) {
+    const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    const max = sorted[0]?.[1] || 1;
+    return sorted.map(([w,c]) =>
+      `<div class="pattern-bar-row">
+        <div class="pattern-bar-label">${w}</div>
+        <div class="pattern-bar-wrap"><div class="pattern-bar-fill ${cls}" style="width:${Math.round(c/max*100)}%"></div></div>
+        <div class="pattern-count">${c}</div>
+      </div>`
+    ).join('');
+  }
+
+  el.innerHTML = `
+    <div class="pattern-card">
+      <div class="pattern-title">Most Common Moods</div>
+      ${barRows(moodCount, '')}
+    </div>
+    <div class="pattern-card">
+      <div class="pattern-title">Most Common Energy States</div>
+      ${barRows(energyCount, 'energy')}
+    </div>
+    <div class="pattern-card">
+      <div class="pattern-title">Check-in Coverage</div>
+      <div style="font-size:0.82rem;color:var(--bark)">${total} day${total!==1?'s':''} tracked</div>
+    </div>`;
+}
+
+// Date header
+document.getElementById('headerDate').textContent =
+  new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+
+buildPills();
+restoreToday();
+checkReminder();
+</script>
+</body>
+</html>

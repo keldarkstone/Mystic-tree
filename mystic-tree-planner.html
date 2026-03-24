@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mystic Tree Daily Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --moss: #5a6e4a;
+    --sage: #8fa67e;
+    --sage-light: #c5d4b8;
+    --clay: #b5785a;
+    --clay-light: #e8cfc0;
+    --cream: #f5f0e8;
+    --parchment: #ede6d6;
+    --bark: #3d2e1e;
+    --fog: #9aa89c;
+    --fog-light: #dce4de;
+    --warm-white: #faf7f2;
+    --gold: #c49a3c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--warm-white);
+    color: var(--bark);
+    min-height: 100vh;
+  }
+
+  .header {
+    background: var(--moss);
+    padding: 1.2rem 1.5rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(61,46,30,0.18);
+  }
+  .header-title { font-family:'Lora',serif; font-size:1.25rem; color:var(--cream); }
+  .header-title em { font-style:italic; color:var(--sage-light); }
+  .date-display { font-size:0.78rem; color:var(--sage-light); font-weight:300; text-align:right; }
+
+  .day-selector {
+    padding: 1.2rem 1rem 0.6rem;
+    background: var(--parchment);
+    border-bottom: 1px solid var(--sage-light);
+  }
+  .day-selector-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fog);
+    margin-bottom: 0.6rem;
+    font-weight: 600;
+  }
+  .day-tabs { display:flex; gap:0.4rem; flex-wrap:wrap; }
+  .day-tab {
+    padding: 0.38rem 0.75rem;
+    border-radius: 20px;
+    border: 1.5px solid var(--sage-light);
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: white;
+    color: var(--fog);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .day-tab:hover { border-color: var(--moss); color: var(--moss); }
+  .day-tab.active { background: var(--moss); border-color: var(--moss); color: white; }
+
+  .planner-body { max-width: 640px; margin: 0 auto; padding: 1rem 1rem 3rem; }
+
+  /* Day banners */
+  .day-banner {
+    border-radius: 14px;
+    padding: 1rem 1.2rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    display: none;
+  }
+  .banner-crash  { background: linear-gradient(135deg, #fff3e0, #ffe0c0); border: 1.5px solid #e8a84a; }
+  .banner-flow   { background: linear-gradient(135deg, #edf4ea, #d8ecce); border: 1.5px solid var(--sage); }
+  .banner-medical{ background: linear-gradient(135deg, #eaf4ec, #cce8d4); border: 1.5px solid #6aaa80; }
+  .banner-fog    { background: linear-gradient(135deg, #eef0f2, #dce4de); border: 1.5px solid var(--fog); }
+  .banner-errands{ background: linear-gradient(135deg, #fdf3e3, #ead4b8); border: 1.5px solid var(--clay); }
+  .banner .icon { font-size: 2rem; }
+  .banner-text h2 { font-family:'Lora',serif; font-size:1.05rem; font-weight:600; color:var(--bark); }
+  .banner-text p  { font-size:0.8rem; color:var(--fog); margin-top:0.15rem; font-style:italic; }
+
+  /* Sections */
+  .section { display: none; }
+  .section.visible { display: block; animation: fadeSlide 0.3s ease; }
+
+  .card {
+    background: white;
+    border-radius: 14px;
+    border: 1.5px solid var(--sage-light);
+    padding: 1rem 1.2rem;
+    margin-bottom: 0.8rem;
+    box-shadow: 0 2px 8px rgba(61,46,30,0.05);
+  }
+  .card-title {
+    font-family: 'Lora', serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--bark);
+    margin-bottom: 0.7rem;
+  }
+
+  /* Checklist items */
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.4rem 0;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.1s;
+  }
+  .check-item:hover { background: var(--fog-light); }
+  .check-item input { display: none; }
+  .check-box {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    border: 2px solid var(--sage);
+    border-radius: 4px;
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    background: white;
+  }
+  .check-item.done .check-box {
+    background: var(--moss);
+    border-color: var(--moss);
+  }
+  .check-item.done .check-box::after { content: '✓'; color: white; font-size: 11px; font-weight: 700; }
+  .check-label { font-size: 0.82rem; color: var(--bark); line-height: 1.4; }
+  .check-item.done .check-label { text-decoration: line-through; color: var(--fog); }
+
+  /* Textarea & input */
+  textarea, input[type="text"], input[type="time"] {
+    width: 100%;
+    border: 1.5px solid var(--sage-light);
+    border-radius: 8px;
+    padding: 0.5rem 0.7rem;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.82rem;
+    color: var(--bark);
+    background: var(--warm-white);
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  textarea:focus, input:focus { border-color: var(--moss); }
+  textarea { min-height: 64px; }
+  label { display:block; font-size:0.75rem; font-weight:600; color:var(--fog); margin-bottom:0.3rem; margin-top:0.6rem; text-transform:uppercase; letter-spacing:0.06em; }
+  label:first-child { margin-top: 0; }
+
+  /* Energy buttons */
+  .energy-row { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.3rem; }
+  .energy-btn {
+    padding: 0.3rem 0.7rem;
+    border-radius: 20px;
+    border: 1.5px solid var(--sage-light);
+    background: var(--warm-white);
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--bark);
+  }
+  .energy-btn:hover { border-color: var(--clay); }
+  .energy-btn.selected { background: var(--clay); border-color: var(--clay); color: white; font-weight: 700; }
+
+  /* Stars */
+  .star-row { display:flex; gap:0.3rem; margin:0.3rem 0 0.5rem; }
+  .star { font-size:1.3rem; cursor:pointer; opacity:0.3; transition:opacity 0.15s; }
+  .star.lit { opacity:1; }
+
+  /* Appt slots */
+  .appt-slot { display:flex; gap:0.5rem; align-items:center; margin-bottom:0.4rem; }
+  .appt-slot input[type="time"] { width: 120px; min-width: 120px; }
+  .appt-slot input[type="text"] { flex:1; }
+
+  /* Errands */
+  .errand-zone { margin-bottom:0.8rem; }
+  .errand-zone-label { font-size:0.7rem; font-weight:700; color:var(--fog); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.3rem; }
+  .errand-list { margin-bottom:0.3rem; }
+  .errand-add { display:flex; gap:0.4rem; }
+  .errand-add input { flex:1; }
+  .add-btn {
+    background: var(--moss); color:white; border:none; border-radius:8px;
+    padding:0.4rem 0.8rem; font-size:0.8rem; cursor:pointer;
+    font-family:'Nunito',sans-serif; transition:background 0.15s; white-space:nowrap;
+  }
+  .add-btn:hover { background:#4a5c3a; }
+
+  .section-divider {
+    text-align:center; font-size:0.7rem; color:var(--fog); letter-spacing:0.12em;
+    text-transform:uppercase; margin: 1.2rem 0 0.8rem; font-weight:600;
+  }
+
+  .footer { text-align:center; padding:1.5rem 1rem; font-size:0.7rem; color:var(--fog); font-style:italic; }
+
+  @keyframes fadeSlide {
+    from { opacity:0; transform:translateY(6px); }
+    to   { opacity:1; transform:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">🌿 <em>Mystic Tree</em> Daily Planner</div>
+  <div class="date-display" id="dateDisplay"></div>
+</div>
+
+<div class="day-selector">
+  <div class="day-selector-label">What kind of day is this?</div>
+  <div class="day-tabs">
+    <button class="day-tab active" data-type="crash" onclick="setDay('crash')">🔥 Crash Day</button>
+    <button class="day-tab" data-type="flow"   onclick="setDay('flow')">🌊 Flow Day</button>
+    <button class="day-tab" data-type="medical" onclick="setDay('medical')">🌿 Medical Day</button>
+    <button class="day-tab" data-type="fog"    onclick="setDay('fog')">🌫️ Fog Day</button>
+    <button class="day-tab" data-type="errands" onclick="setDay('errands')">🛒 Errands Day</button>
+  </div>
+</div>
+
+<div class="planner-body">
+
+  <!-- BANNERS -->
+  <div id="banner-crash" class="day-banner banner-crash">
+    <div class="icon">🔥</div>
+    <div class="banner-text"><h2>Crash Day</h2><p>Surviving is the achievement. Be gentle.</p></div>
+  </div>
+  <div id="banner-flow" class="day-banner banner-flow">
+    <div class="icon">🌊</div>
+    <div class="banner-text"><h2>Flow Day</h2><p>You've got this. Protect the energy.</p></div>
+  </div>
+  <div id="banner-medical" class="day-banner banner-medical">
+    <div class="icon">🌿</div>
+    <div class="banner-text"><h2>Medical Day</h2><p>You showed up. That's already the work.</p></div>
+  </div>
+  <div id="banner-fog" class="day-banner banner-fog">
+    <div class="icon">🌫️</div>
+    <div class="banner-text"><h2>Fog Day</h2><p>Low spoons, no judgment. Floor is enough.</p></div>
+  </div>
+  <div id="banner-errands" class="day-banner banner-errands">
+    <div class="icon">🛒</div>
+    <div class="banner-text"><h2>Errands Day</h2><p>Out in the world. Plan light, leave early.</p></div>
+  </div>
+
+  <!-- ══════════ CRASH DAY ══════════ -->
+  <div class="section" id="sec-crash-basics">
+    <div class="card">
+      <div class="card-title">Today's basics (pick 1–3)</div>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">Drink water</span></label>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">Eat something — anything</span></label>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">Take meds / supplements</span></label>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">Move to a different spot</span></label>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">Get some light / outside air</span></label>
+    </div>
+  </div>
+  <div class="section" id="sec-crash-win">
+    <div class="card">
+      <div class="card-title">One tiny win I'm aiming for</div>
+      <textarea placeholder="It can be very, very small."></textarea>
+    </div>
+  </div>
+  <div class="section" id="sec-crash-body">
+    <div class="card">
+      <div class="card-title">Body check-in</div>
+      <label>Energy level</label>
+      <div class="energy-row">
+        <button class="energy-btn" onclick="selectEnergy(this,'crash-energy')">empty</button>
+        <button class="energy-btn" onclick="selectEnergy(this,'crash-energy')">flickering</button>
+        <button class="energy-btn" onclick="selectEnergy(this,'crash-energy')">low but here</button>
+        <button class="energy-btn" onclick="selectEnergy(this,'crash-energy')">okay</button>
+      </div>
+      <label style="margin-top:0.8rem">Pain / discomfort</label>
+      <div class="energy-row">
+        <button class="energy-btn" onclick="selectEnergy(this,'crash-pain')">none</button>
+        <button class="energy-btn" onclick="selectEnergy(this,'crash-pain')">mild</button>
+        <button class="energy-btn" onclick="selectEnergy(this,'crash-pain')">moderate</button>
+        <button class="energy-btn" onclick="selectEnergy(this,'crash-pain')">high</button>
+      </div>
+      <label style="margin-top:0.8rem">Notes</label>
+      <textarea placeholder="What is the body telling you today?"></textarea>
+    </div>
+  </div>
+  <div class="section" id="sec-crash-dopamine">
+    <div class="card">
+      <div class="card-title">Dopamine menu 🍃</div>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">Something warm to drink</span></label>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">Comfort show / podcast</span></label>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">Soft textures / weighted blanket</span></label>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">Smell something grounding</span></label>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">Look at something beautiful outside</span></label>
+    </div>
+  </div>
+  <div class="section" id="sec-crash-compassion">
+    <div class="card">
+      <div class="card-title">Compassion corner</div>
+      <textarea placeholder="What would you say to a friend having this same kind of day?"></textarea>
+    </div>
+  </div>
+  <div class="section" id="sec-crash-permission">
+    <div class="card">
+      <div class="card-title">Tomorrow's permission slip</div>
+      <textarea placeholder="I give myself permission to… (rest, start small, try again, etc.)"></textarea>
+    </div>
+  </div>
+
+  <!-- ══════════ FLOW DAY ══════════ -->
+  <div class="section" id="sec-flow-intention">
+    <div class="card">
+      <div class="card-title">Today's intention</div>
+      <textarea placeholder="What energy are you bringing to today?"></textarea>
+    </div>
+  </div>
+  <div class="section" id="sec-flow-priorities">
+    <div class="card">
+      <div class="card-title">Top 3 priorities</div>
+      <label class="check-item" style="align-items:center" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><input type="text" placeholder="Priority 1" onclick="event.stopPropagation()" style="width:auto;flex:1"></label>
+      <label class="check-item" style="align-items:center;margin-top:0.3rem" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><input type="text" placeholder="Priority 2" onclick="event.stopPropagation()" style="width:auto;flex:1"></label>
+      <label class="check-item" style="align-items:center;margin-top:0.3rem" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><input type="text" placeholder="Priority 3" onclick="event.stopPropagation()" style="width:auto;flex:1"></label>
+    </div>
+  </div>
+  <div class="section" id="sec-flow-protect">
+    <div class="card">
+      <div class="card-title">Protect the flow</div>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">Block interruptions / notifications off</span></label>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">Have water + snack nearby</span></label>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">Set a stopping time so I don't crash</span></label>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">One thing I'm NOT doing today</span></label>
+    </div>
+  </div>
+  <div class="section" id="sec-flow-extra">
+    <div class="card">
+      <div class="card-title">Brain dump (if needed)</div>
+      <textarea placeholder="Everything else rattling around — get it out here so it doesn't steal focus."></textarea>
+    </div>
+  </div>
+  <div class="section" id="sec-flow-note">
+    <div class="card">
+      <div class="card-title">Stretch tasks (bonus round)</div>
+      <textarea placeholder="If I have extra momentum, I could also…"></textarea>
+    </div>
+  </div>
+
+  <!-- ══════════ MEDICAL DAY ══════════ -->
+  <div class="section" id="sec-med-appts">
+    <div class="card">
+      <div class="card-title">Appointments today</div>
+      <div class="appt-slot"><input type="time"><input type="text" placeholder="Provider / appointment"></div>
+      <div class="appt-slot"><input type="time"><input type="text" placeholder="Provider / appointment"></div>
+      <div class="appt-slot"><input type="time"><input type="text" placeholder="Provider / appointment"></div>
+    </div>
+  </div>
+  <div class="section" id="sec-med-prep">
+    <div class="card">
+      <div class="card-title">Before I go — prep notes</div>
+      <label>Questions to ask</label>
+      <textarea placeholder="Write them down so brain fog doesn't eat them."></textarea>
+      <label style="margin-top:0.7rem">Symptoms / things to mention</label>
+      <textarea placeholder="Don't minimize. This is the data."></textarea>
+    </div>
+  </div>
+  <div class="section" id="sec-med-body">
+    <div class="card">
+      <div class="card-title">Body notes — before / after</div>
+      <label>How I feel going in</label>
+      <textarea placeholder="Energy, pain, anxiety, what I'm dreading or hoping for…"></textarea>
+      <label style="margin-top:0.7rem">How I feel coming out</label>
+      <textarea placeholder="What happened, how I'm landing, what I learned…"></textarea>
+    </div>
+  </div>
+  <div class="section" id="sec-med-recovery">
+    <div class="card">
+      <div class="card-title">Recovery checklist</div>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">Rest window scheduled</span></label>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">Something easy for meals planned</span></label>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">Follow-up actions noted</span></label>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">Tomorrow's expectations lowered</span></label>
+    </div>
+  </div>
+  <div class="section" id="sec-med-onething">
+    <div class="card">
+      <div class="card-title">One thing I advocated for today</div>
+      <textarea placeholder="Even if it was small. Even if it didn't land. You showed up."></textarea>
+    </div>
+  </div>
+
+  <!-- ══════════ FOG DAY ══════════ -->
+  <div class="section" id="sec-fog-spoons">
+    <div class="card">
+      <div class="card-title">Spoon check</div>
+      <label>I'm starting today with</label>
+      <div class="energy-row">
+        <button class="energy-btn" onclick="selectEnergy(this,'fog-spoons')">1 spoon</button>
+        <button class="energy-btn" onclick="selectEnergy(this,'fog-spoons')">2–3 spoons</button>
+        <button class="energy-btn" onclick="selectEnergy(this,'fog-spoons')">half a tank</button>
+        <button class="energy-btn" onclick="selectEnergy(this,'fog-spoons')">more than expected</button>
+      </div>
+    </div>
+  </div>
+  <div class="section" id="sec-fog-nonnegotiable">
+    <div class="card">
+      <div class="card-title">The absolute floor (3 max)</div>
+      <label class="check-item" style="align-items:center" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><input type="text" placeholder="Non-negotiable #1" onclick="event.stopPropagation()" style="width:auto;flex:1"></label>
+      <label class="check-item" style="align-items:center;margin-top:0.3rem" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><input type="text" placeholder="Non-negotiable #2" onclick="event.stopPropagation()" style="width:auto;flex:1"></label>
+      <label class="check-item" style="align-items:center;margin-top:0.3rem" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><input type="text" placeholder="Non-negotiable #3" onclick="event.stopPropagation()" style="width:auto;flex:1"></label>
+    </div>
+  </div>
+  <div class="section" id="sec-fog-gentle">
+    <div class="card">
+      <div class="card-title">Gentle anchors</div>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">One small sensory comfort</span></label>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">Softest task first</span></label>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">Body horizontal at least once</span></label>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">No guilt for what doesn't happen</span></label>
+    </div>
+  </div>
+  <div class="section" id="sec-fog-defer">
+    <div class="card">
+      <div class="card-title">Deferral shelf</div>
+      <textarea placeholder="Things that can wait — park them here so they stop rattling around."></textarea>
+    </div>
+  </div>
+  <div class="section" id="sec-fog-permission">
+    <div class="card">
+      <div class="card-title">Permission to rest</div>
+      <textarea placeholder="You are allowed to be here, in this fog, without explanation. Write yourself a note."></textarea>
+    </div>
+  </div>
+
+  <!-- ══════════ ERRANDS DAY ══════════ -->
+  <div class="section" id="sec-errands-energy">
+    <div class="card">
+      <div class="card-title">Pre-departure energy check</div>
+      <div class="energy-row">
+        <button class="energy-btn" onclick="selectEnergy(this,'errands-energy')">not ready</button>
+        <button class="energy-btn" onclick="selectEnergy(this,'errands-energy')">will push through</button>
+        <button class="energy-btn" onclick="selectEnergy(this,'errands-energy')">okay to go</button>
+        <button class="energy-btn" onclick="selectEnergy(this,'errands-energy')">actually good</button>
+      </div>
+      <label style="margin-top:0.7rem">What I need before leaving</label>
+      <textarea placeholder="Water, snack, certain shoes, quiet time, Christie's help…"></textarea>
+    </div>
+  </div>
+  <div class="section" id="sec-errands-list">
+    <div class="card">
+      <div class="card-title">Errand stops</div>
+      <div class="errand-zone">
+        <div class="errand-zone-label">Stop 1</div>
+        <div class="errand-list" id="stop1-list"></div>
+        <div class="errand-add"><input type="text" id="stop1-input" placeholder="Add item…" onkeydown="if(event.key==='Enter')addErrand('stop1')"><button class="add-btn" onclick="addErrand('stop1')">+ add</button></div>
+      </div>
+      <div class="errand-zone">
+        <div class="errand-zone-label">Stop 2</div>
+        <div class="errand-list" id="stop2-list"></div>
+        <div class="errand-add"><input type="text" id="stop2-input" placeholder="Add item…" onkeydown="if(event.key==='Enter')addErrand('stop2')"><button class="add-btn" onclick="addErrand('stop2')">+ add</button></div>
+      </div>
+      <div class="errand-zone">
+        <div class="errand-zone-label">Stop 3</div>
+        <div class="errand-list" id="stop3-list"></div>
+        <div class="errand-add"><input type="text" id="stop3-input" placeholder="Add item…" onkeydown="if(event.key==='Enter')addErrand('stop3')"><button class="add-btn" onclick="addErrand('stop3')">+ add</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="section" id="sec-errands-bag">
+    <div class="card">
+      <div class="card-title">Don't leave without</div>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">Phone + charger</span></label>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">Wallet / cards</span></label>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">Water bottle</span></label>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">Snack</span></label>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">Keys</span></label>
+      <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><div class="check-box"></div><span class="check-label">Meds if needed</span></label>
+    </div>
+  </div>
+  <div class="section" id="sec-errands-done">
+    <div class="card">
+      <div class="card-title">Debrief</div>
+      <label>How it actually went</label>
+      <textarea placeholder="Energy used, surprises, what I'm glad I did, what I'd skip next time…"></textarea>
+      <label style="margin-top:0.7rem">Recovery plan for tonight</label>
+      <textarea placeholder="What does my body need after being out?"></textarea>
+    </div>
+  </div>
+
+  <!-- ══════════ END OF DAY (shared) ══════════ -->
+  <div class="section" id="sec-eod">
+    <div class="section-divider">— end of day —</div>
+    <div class="card">
+      <div class="card-title">How did today go? 🌿</div>
+      <div class="star-row" id="star-row">
+        <span class="star" onclick="rateStar(1)">🌿</span>
+        <span class="star" onclick="rateStar(2)">🌿</span>
+        <span class="star" onclick="rateStar(3)">🌿</span>
+        <span class="star" onclick="rateStar(4)">🌿</span>
+        <span class="star" onclick="rateStar(5)">🌿</span>
+      </div>
+      <label>One win from today</label>
+      <textarea placeholder="Especially small ones count double."></textarea>
+      <label style="margin-top:0.7rem">One thing I'm setting down before tomorrow</label>
+      <textarea placeholder="Let it go here so it doesn't follow you to bed…"></textarea>
+    </div>
+  </div>
+
+</div><!-- /planner-body -->
+
+<div class="footer">🌿 Mystic Tree Daily Planner · made for Kelly</div>
+
+<script>
+const d = new Date();
+document.getElementById('dateDisplay').innerHTML =
+  d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+
+const dayTypes = ['crash','flow','medical','fog','errands'];
+const sectionMap = {
+  crash:   ['sec-crash-basics','sec-crash-win','sec-crash-body','sec-crash-dopamine','sec-crash-compassion','sec-crash-permission','sec-eod'],
+  flow:    ['sec-flow-intention','sec-flow-priorities','sec-flow-protect','sec-flow-extra','sec-flow-note','sec-eod'],
+  medical: ['sec-med-appts','sec-med-prep','sec-med-body','sec-med-recovery','sec-med-onething','sec-eod'],
+  fog:     ['sec-fog-spoons','sec-fog-nonnegotiable','sec-fog-gentle','sec-fog-defer','sec-fog-permission','sec-eod'],
+  errands: ['sec-errands-energy','sec-errands-list','sec-errands-bag','sec-errands-done','sec-eod'],
+};
+
+function setDay(type) {
+  document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.day-tab[data-type="${type}"]`).classList.add('active');
+  dayTypes.forEach(dt => {
+    const b = document.getElementById(`banner-${dt}`);
+    if (b) b.style.display = 'none';
+  });
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
+  const banner = document.getElementById(`banner-${type}`);
+  if (banner) banner.style.display = 'flex';
+  (sectionMap[type] || []).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('visible');
+  });
+}
+
+function toggleCheck(el) { el.classList.toggle('done'); }
+
+function selectEnergy(btn, group) {
+  btn.closest('.energy-row').querySelectorAll('.energy-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function rateStar(n) {
+  document.querySelectorAll('.star').forEach((s,i) => s.classList.toggle('lit', i < n));
+}
+
+function addErrand(stopId) {
+  const input = document.getElementById(`${stopId}-input`);
+  const val = input.value.trim();
+  if (!val) return;
+  const list = document.getElementById(`${stopId}-list`);
+  const item = document.createElement('label');
+  item.className = 'check-item';
+  item.onclick = function(){ toggleCheck(this); };
+  item.innerHTML = `<input type="checkbox"><div class="check-box"></div><span class="check-label">${val}</span>`;
+  list.appendChild(item);
+  input.value = '';
+}
+
+setDay('crash');
+</script>
+</body>
+</html>
